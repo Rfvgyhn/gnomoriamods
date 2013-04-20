@@ -117,7 +117,7 @@ namespace Rfvgyhn.Gnomoria.Mods
             squadList.Top = moveToBtn.Top;
             squadList.Left = newAttackBtn.Left + newAttackBtn.Width + newAttackBtn.Margins.Right + squadList.Margins.Left;
             squadList.Width = 235;
-            squadList.Anchor = Anchors.Top | Anchors.Right | Anchors.Bottom;
+            squadList.Anchor = Anchors.Left | Anchors.Top | Anchors.Right | Anchors.Bottom;
             squadList.Items.AddRange(squadNames);
             squadList.ItemIndex = 0;
             newAttackBtn.Click += (object sender, Game.GUI.Controls.EventArgs e) =>
