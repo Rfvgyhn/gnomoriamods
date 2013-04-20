@@ -88,6 +88,7 @@ namespace Rfvgyhn.Gnomoria.Mods
         {
             const string AttackLbl = "Attack";
             const string MoveToLbl = "Move To";
+            const string ListItemFormat = "{0} ({1})";
 
             var controls = panel.Controls.Where(c => c is ClipBox).Single().Controls;
             var oldAttackBtn = controls.Where(c => c.Text == AttackLbl).SingleOrDefault();
@@ -100,8 +101,10 @@ namespace Rfvgyhn.Gnomoria.Mods
 
             var target = (Character)panelTarget.GetValue(panel);
             var moveToBtn = controls.Where(c => c.Text == MoveToLbl).SingleOrDefault();
-
-            var squadNames = new string[] { Military.AllSquadsDisplay }.Concat(GnomanEmpire.Instance.Fortress.Military.Squads.OrderBy(s => s.Name).Select(s => s.Name)).ToArray();
+            var squads = GnomanEmpire.Instance.Fortress.Military.Squads;
+            var squadNames = new string[] { Military.AllSquadsDisplay }.Concat(squads.OrderBy(s => s.Name)
+                                                                                     .Select(s => string.Format(ListItemFormat, s.Name, s.Members.Count(m => m != null))))
+                                                                       .ToArray();
 
             var newAttackBtn = new Button(panel.Manager);
             newAttackBtn.Init();
