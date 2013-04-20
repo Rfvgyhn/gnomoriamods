@@ -14,7 +14,6 @@ namespace Rfvgyhn.Gnomoria.Mods
     {
         static Military military = new Military();
         static FieldInfo panelTarget;
-        static string[] squadNames = null;
         Version version = AssemblyName.GetAssemblyName(Assembly.GetExecutingAssembly().Location).Version;
 
         public override string Name
@@ -102,8 +101,7 @@ namespace Rfvgyhn.Gnomoria.Mods
             var target = (Character)panelTarget.GetValue(panel);
             var moveToBtn = controls.Where(c => c.Text == MoveToLbl).SingleOrDefault();
 
-            if (squadNames == null)
-                squadNames = new string[] { Military.AllSquadsDisplay }.Concat(GnomanEmpire.Instance.Fortress.Military.Squads.OrderBy(s => s.Name).Select(s => s.Name)).ToArray();
+            var squadNames = new string[] { Military.AllSquadsDisplay }.Concat(GnomanEmpire.Instance.Fortress.Military.Squads.OrderBy(s => s.Name).Select(s => s.Name)).ToArray();
 
             var newAttackBtn = new Button(panel.Manager);
             newAttackBtn.Init();
