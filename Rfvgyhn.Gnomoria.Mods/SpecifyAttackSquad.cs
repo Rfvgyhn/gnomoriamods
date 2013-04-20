@@ -66,16 +66,12 @@ namespace Rfvgyhn.Gnomoria.Mods
         {
             var targets = typeof(Game.Military).GetFields(BindingFlags.Instance | BindingFlags.NonPublic).Where(f => f.FieldType == typeof(List<Character>));
 
-            // Military class contains two fields of type List<Character>. Find the one with baddies in it and add them to custom targets list
             foreach (var target in targets)
             {
                 var value = (List<Character>)target.GetValue(m);
 
-                if (value.Any() && value.First().FactionID != Faction.PlayerFactionID)
-                {
+                if (value.Any())
                     value.ForEach(t => military.AddTarget(Military.AllSquads, t));
-                    break;
-                }
             }
         }
 
