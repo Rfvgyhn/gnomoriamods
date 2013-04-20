@@ -102,7 +102,8 @@ namespace Rfvgyhn.Gnomoria.Mods
             var target = (Character)panelTarget.GetValue(panel);
             var moveToBtn = controls.Where(c => c.Text == MoveToLbl).SingleOrDefault();
             var squads = GnomanEmpire.Instance.Fortress.Military.Squads;
-            var squadNames = new string[] { Military.AllSquadsDisplay }.Concat(squads.OrderBy(s => s.Name)
+            var squadNames = new string[] { Military.AllSquadsDisplay }.Concat(squads.Where(s => s.Formation.CarryOutAttackOrders)
+                                                                                     .OrderBy(s => s.Name)
                                                                                      .Select(s => string.Format(ListItemFormat, s.Name, s.Members.Count(m => m != null))))
                                                                        .ToArray();
 
