@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Game;
+using System;
+using System.Diagnostics;
 
 namespace Rfvgyhn.Gnomoria.Mods
 {
@@ -18,7 +20,7 @@ namespace Rfvgyhn.Gnomoria.Mods
 
         public void AddTarget(string squadName, Character target)
         {
-            var squad = squadName.ToLower();
+            var squad = squadName.Split('(')[0].Trim().ToLower();
 
             if (!attackTargets.ContainsKey(squad))
                 attackTargets.Add(squad, new List<Character>());
