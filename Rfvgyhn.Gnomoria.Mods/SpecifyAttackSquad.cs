@@ -14,7 +14,6 @@ namespace Rfvgyhn.Gnomoria.Mods
     {
         static Military military = new Military();
         static FieldInfo panelTarget;
-        Version version = AssemblyName.GetAssemblyName(Assembly.GetExecutingAssembly().Location).Version;
         static long militaryPosition;
 
         public override string Name
@@ -37,7 +36,7 @@ namespace Rfvgyhn.Gnomoria.Mods
         {
             get
             {
-                return version;
+                return new Version(1, 2);
             }
         }
 
