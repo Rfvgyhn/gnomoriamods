@@ -15,6 +15,7 @@ namespace Rfvgyhn.Gnomoria.Mods
         static Military military = new Military();
         static FieldInfo panelTarget;
         Version version = AssemblyName.GetAssemblyName(Assembly.GetExecutingAssembly().Location).Version;
+        static long militaryPosition;
 
         public override string Name
         {
@@ -46,6 +47,7 @@ namespace Rfvgyhn.Gnomoria.Mods
             {
                 return new IMethodModification[]
 			    {
+                    new MethodHook(typeof(BlueprintManager).GetConstructor(new Type[] { typeof(BinaryReader) }), Method.Of(new Action<BlueprintManager, BinaryReader>(BeforeLoadTargets)), MethodHookType.RunAfter, MethodHookFlags.None),
                     new MethodHook(typeof(Game.Military).GetConstructor(new Type[] { typeof(BinaryReader) }), Method.Of(new Action<Game.Military, BinaryReader>(LoadTargets)), MethodHookType.RunAfter, MethodHookFlags.None),
                     new MethodHook(typeof(Game.Military).GetMethod("FindAttackTarget"), Method.Of(new Func<Game.Military, Character, Character>(FindAttackTarget)), MethodHookType.Replace, MethodHookFlags.None),
                     new MethodHook(typeof(Game.Military).GetMethod("RemoveAttackTarget"), Method.Of(new Action<Game.Military, Character>(RemoveAttackTarget)), MethodHookType.RunAfter, MethodHookFlags.None),
@@ -60,31 +62,88 @@ namespace Rfvgyhn.Gnomoria.Mods
             base.Initialize_PreGame();
 
             panelTarget = typeof(CharacterOverviewUI).GetFields(BindingFlags.Instance | BindingFlags.NonPublic).Single(f => f.FieldType == typeof(Character));
+            
         }
 
-        public static void LoadTargets(Game.Military m, BinaryReader b)
+        /// <summary>
+        /// Get save position of the military object
+        /// </summary>
+        public static void BeforeLoadTargets(BlueprintManager m, BinaryReader reader)
         {
-            var targets = typeof(Game.Military).GetFields(BindingFlags.Instance | BindingFlags.NonPublic).Where(f => f.FieldType == typeof(List<Character>));
-
-            foreach (var target in targets)
-            {
-                var value = (List<Character>)target.GetValue(m);
-
-                if (value.Any())
-                    value.ForEach(t => military.AddTarget(t));
-            }
+            militaryPosition = reader.BaseStream.Position;
         }
 
+        /// <summary>
+        /// Adds attack targets from save file
+        /// </summary>
+        /// <param name="m"></param>
+        /// <param name="reader"></param>
+        public static void LoadTargets(Game.Military m, BinaryReader reader)
+        {
+            // Need to get attack targets only. Since reflection can't differentiate between attack and defend targets without using the
+            // field name (field name may change between releases since it's obfuscated), read them from the save file
+            var readerPosition = reader.BaseStream.Position;
+            reader.BaseStream.Seek(militaryPosition, SeekOrigin.Begin);
+
+            int num = reader.ReadInt32();
+            for (int i = 0; i < num; i++)
+                new Uniform(reader);
+
+            num = reader.ReadInt32();
+            for (int i = 0; i < num; i++)
+                new SquadPosition(reader, m);
+
+            num = reader.ReadInt32();
+            for (int i = 0; i < num; i++)
+                new Formation(reader, m);
+
+            num = reader.ReadInt32();
+            for (int i = 0; i < num; i++)
+                new GuardStation(reader);
+
+            num = reader.ReadInt32();
+            for (int i = 0; i < num; i++)
+                ReadPatrolRoute(reader);    // PatrolRoute constructor modifies the map object, so manually progress the reader position
+
+            if (GnomanEmpire.Instance.LoadingSaveVersion >= 4)
+            {
+                num = reader.ReadInt32();
+                for (int i = 0; i < num; i++)
+                    ReadTrainingStation(reader);    // TrainingStation constructor modifies the map object, so manually progress the reader position
+            }
+
+            GameEntityManager entityManager = GnomanEmpire.Instance.EntityManager;
+            num = reader.ReadInt32();
+            for (int i = 0; i < num; i++)
+            {
+                Character character = entityManager.Entity(reader.ReadUInt32()) as Character;
+
+                if (character != null)
+                    military.AddTarget(character);
+            }
+
+            reader.BaseStream.Seek(readerPosition, SeekOrigin.Begin);
+        }
+
+        /// <summary>
+        /// Override Game.Military.FindAttackTarget
+        /// </summary>
         public static Character FindAttackTarget(Game.Military m, Character c)
         {
             return military.FindAttackTarget(c);
         }
 
+        /// <summary>
+        /// Remove attack targer Game.Military.RemoveAttackTarget is called
+        /// </summary>
         public static void RemoveAttackTarget(Game.Military m, Character c)
         {
             military.RemoveAttackTarget(c);
         }
 
+        /// <summary>
+        /// Add custom attack button and squad list
+        /// </summary>
         public static void SetupPanel(CharacterOverviewUI panel)
         {
             const string AttackLbl = "Attack";
@@ -156,6 +215,69 @@ namespace Rfvgyhn.Gnomoria.Mods
             panel.Add(newAttackBtn);
         }
 
+        /// <summary>
+        /// Progress stream position for PatrolRoute class
+        /// </summary>
+        private static void ReadPatrolRoute(BinaryReader reader)
+        {
+            ReadDesignation(reader);
+            ReadMilitaryStation(reader);
+
+            int num = reader.ReadInt32();
+            for (int i = 0; i < num; i++)
+            {
+                reader.ReadSingle();
+                reader.ReadSingle();
+                reader.ReadSingle();
+            }
+            reader.ReadBoolean();
+            for (int j = 0; j < 5; j++)
+                new PatrolRouteStatus(reader);
+        }
+
+        /// <summary>
+        /// Progress stream position for TrainingStation class
+        /// </summary>
+        private static void ReadTrainingStation(BinaryReader reader)
+        {
+            ReadDesignation(reader);
+            ReadMilitaryStation(reader);
+
+            reader.ReadUInt32();
+            reader.ReadUInt32();
+            reader.ReadUInt32();
+
+            if (GnomanEmpire.Instance.LoadingSaveVersion >= 8)
+                reader.ReadBoolean();
+        }
+
+        /// <summary>
+        /// Progress stream position for Designation class
+        /// </summary>
+        private static void ReadDesignation(BinaryReader reader)
+        {
+            reader.ReadString();
+            reader.ReadByte(); reader.ReadByte(); reader.ReadByte(); reader.ReadByte();
+            reader.ReadByte(); reader.ReadByte(); reader.ReadByte(); reader.ReadByte();
+            int num = reader.ReadInt32();
+            for (int i = 0; i < num; i++)
+                reader.ReadInt32(); reader.ReadInt32(); reader.ReadInt32(); reader.ReadInt32();
+            reader.ReadInt32();
+            reader.ReadBoolean();
+        }
+
+        /// <summary>
+        /// Progress stream position for MilitaryStation class
+        /// </summary>
+        private static void ReadMilitaryStation(BinaryReader reader)
+        {
+            if (GnomanEmpire.Instance.LoadingSaveVersion >= 4)
+				reader.ReadInt32();
+        }
+
+        /// <summary>
+        /// Create a checkbox for a particular squad
+        /// </summary>
         private static CheckBox CreateCheckbox(Manager manager, string text, int squadIndex)
         {
             CheckBox checkBox = new CheckBox(manager);
@@ -171,6 +293,9 @@ namespace Rfvgyhn.Gnomoria.Mods
             return checkBox;
         }
 
+        /// <summary>
+        /// Remove targets when Game.Squad.Disband is called
+        /// </summary>
         public static void Disband(Squad squad)
         {
             military.RemoveSquad(squad);

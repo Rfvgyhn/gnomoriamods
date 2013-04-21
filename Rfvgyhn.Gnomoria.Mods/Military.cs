@@ -35,11 +35,6 @@ namespace Rfvgyhn.Gnomoria.Mods
             attackTargets[AllSquads].Add(target);
         }
 
-        public bool IsAttackTarget(Character c)
-        {
-            return attackTargets.Values.Any(l => l.Contains(c));
-        }
-
         public Character FindAttackTarget(Character c)
         {
             var charSquad = c.Squad.Name.ToLower();
