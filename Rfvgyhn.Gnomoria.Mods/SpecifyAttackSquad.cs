@@ -10,6 +10,7 @@ using Game.GUI.Controls;
 
 namespace Rfvgyhn.Gnomoria.Mods
 {
+    [Obsolete("Feature has been added to Gnomoria as of v0.8.47")]
     public class SpecifyAttackSquad : Mod
     {
         static Military military = new Military();
@@ -28,7 +29,7 @@ namespace Rfvgyhn.Gnomoria.Mods
         {
             get
             {
-                return "Allows you to specify a squad when attacking.";
+                return "Allows you to specify a squad when attacking. This feature has been added to Gnomoria as of v0.8.47. Don't enable if using v0.8.47 or later.";
             }
         }
 
